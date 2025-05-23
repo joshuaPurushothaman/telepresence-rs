@@ -56,14 +56,14 @@ pub async fn getvotes(
     if let Some(choice) = choice {
         let num_votes = *ctx.data().votes.lock().unwrap().get(&choice).unwrap_or(&0);
         let response = match num_votes {
-            0 => format!("Nobody has voted for {} yet", choice),
-            _ => format!("{} people have voted for {}", num_votes, choice),
+            0 => format!("Nobody has voted for {choice} yet"),
+            _ => format!("{num_votes} people have voted for {choice}"),
         };
         ctx.say(response).await?;
     } else {
         let mut response = String::new();
         for (choice, num_votes) in ctx.data().votes.lock().unwrap().iter() {
-            response += &format!("{}: {} votes", choice, num_votes);
+            response += &format!("{choice}: {num_votes} votes");
         }
 
         if response.is_empty() {
