@@ -75,3 +75,41 @@ pub async fn getvotes(
 
     Ok(())
 }
+
+/// Vote for something
+///
+/// Enter `~vote pumpkin` to vote for pumpkins
+#[poise::command(prefix_command, slash_command)]
+pub async fn move_forward(
+    ctx: Context<'_>,
+    #[description = "How long to move forward for (milliseconds, default 1000)"] duration: Option<u64>,
+    // #[description = "How fast to move forward for (top speed 127, default 50)"] speed: Option<u8>, TODO: take in speed param
+) -> Result<(), Error> {
+    // // Lock the Mutex in a block {} so the Mutex isn't locked across an await point
+    // let num_votes = {
+    //     let mut hash_map = ctx.data().votes.lock().unwrap();
+    //     let num_votes = hash_map.entry(choice.clone()).or_default();
+    //     *num_votes += 1;
+    //     *num_votes
+    // };
+
+    // let response = format!("Successfully voted for {choice}. {choice} now has {num_votes} votes!");
+    // ctx.say(response).await?;
+
+    let duration = duration.unwrap_or(1000);
+
+    let command = crate::robot_command::RobotCommand::MoveInDirection {
+        direction: crate::robot_command::Direction::Forward,
+        duration: std::time::Duration::from_millis(duration),
+    };
+
+    // Send the command to the serial sender
+    ctx.data()
+        .sender
+        .send(command)
+        .expect("Failed to send command to serial sender");
+
+    ctx.say(format!("Moving forward for {duration} milliseconds")).await?;
+
+    Ok(())
+}

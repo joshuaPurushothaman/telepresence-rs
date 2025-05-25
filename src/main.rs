@@ -1,6 +1,11 @@
 #![warn(clippy::str_to_string)]
 
 mod commands;
+mod robot_command;
+use robot_command::RobotCommand;
+
+mod serial_sender;
+use serial_sender::SerialSender;
 
 use poise::serenity_prelude as serenity;
 use std::{
@@ -17,6 +22,7 @@ type Context<'a> = poise::Context<'a, Data, Error>;
 // Custom user data passed to all command functions
 pub struct Data {
     votes: Mutex<HashMap<String, u32>>,
+    sender: std::sync::mpsc::Sender<RobotCommand>,
 }
 
 async fn on_error(error: poise::FrameworkError<'_, Data, Error>) {
@@ -43,7 +49,12 @@ async fn main() {
     // FrameworkOptions contains all of poise's configuration option in one struct
     // Every option can be omitted to use its default value
     let options = poise::FrameworkOptions {
-        commands: vec![commands::help(), commands::vote(), commands::getvotes()],
+        commands: vec![
+            commands::help(),
+            commands::vote(),
+            commands::getvotes(),
+            commands::move_forward(),
+        ],
         prefix_options: poise::PrefixFrameworkOptions {
             prefix: Some("~".into()),
             edit_tracker: Some(Arc::new(poise::EditTracker::for_timespan(
@@ -93,6 +104,15 @@ async fn main() {
         ..Default::default()
     };
 
+    // Create a channel to send commands to the robot
+    let (tx, rx) = std::sync::mpsc::channel::<RobotCommand>();
+
+    // TODO: On Linux, use /dev/by-id to have deterministic port names.
+    let mut serial_sender = SerialSender::try_create("COM5".to_owned(), 115200, rx)
+        .expect("Failed to create SerialSender");
+
+    let t1 = std::thread::spawn(move || serial_sender.run_forever());
+
     let framework = poise::Framework::builder()
         .setup(move |ctx, _ready, framework| {
             Box::pin(async move {
@@ -100,6 +120,7 @@ async fn main() {
                 poise::builtins::register_globally(ctx, &framework.options().commands).await?;
                 Ok(Data {
                     votes: Mutex::new(HashMap::new()),
+                    sender: tx.clone(),
                 })
             })
         })
@@ -115,5 +136,9 @@ async fn main() {
         .framework(framework)
         .await;
 
-    client.unwrap().start().await.unwrap()
+    client.unwrap().start().await.unwrap();
+
+    t1.join()
+        .expect("SerialSender thread::join() panicked")
+        .expect("SerialSender run_forever() panicked");
 }
