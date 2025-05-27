@@ -31,12 +31,12 @@ impl SerialSender {
 
         for msg in self.command_recv.iter() {
             match msg {
-                RobotCommand::EndProgram => {
-                    println!("SerialSender: Ending program.");
+                // RobotCommand::EndProgram => {
+                //     println!("SerialSender: Ending program.");
 
-                    send_stop_msg(&mut self.port)?;
-                    return Ok(());
-                }
+                //     send_stop_msg(&mut self.port)?;
+                //     return Ok(());
+                // }
 
                 RobotCommand::Stop => send_stop_msg(&mut self.port)?,
 

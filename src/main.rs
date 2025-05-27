@@ -54,6 +54,7 @@ async fn main() {
             commands::vote(),
             commands::getvotes(),
             commands::move_robot(),
+            commands::stop_robot(),
         ],
         prefix_options: poise::PrefixFrameworkOptions {
             prefix: Some("~".into()),

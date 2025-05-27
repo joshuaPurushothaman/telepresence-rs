@@ -1,6 +1,6 @@
 use std::time::Duration;
 
-#[derive(Debug)]
+#[derive(Debug, poise::ChoiceParameter)]
 pub enum Direction {
     Forward,
     Backward,
@@ -16,6 +16,5 @@ pub enum RobotCommand {
         duration: Duration,
         speed: u8,
     },
-    Stop,
-    EndProgram,
+    Stop
 }

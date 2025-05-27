@@ -76,15 +76,15 @@ pub async fn getvotes(
     Ok(())
 }
 
-/// Move the robot forward
+/// Move the robot
 ///
-/// Enter `~move_forward` to move the robot forward for 1 second
+/// Enter `~move_robot` to move the robot forward for 1 second
 #[poise::command(prefix_command, slash_command)]
 pub async fn move_robot(
     ctx: Context<'_>,
-    // #[description = "What direction to move in (default forward)"]
-    // #[autocomplete = "crate::robot_command::Direction::autocomplete"]
-    // direction: Option<crate::robot_command::Direction>,
+    #[description = "What direction to move in (default forward)"] direction: Option<
+        crate::robot_command::Direction,
+    >,
     #[description = "How long to move for (default 1 seconds)"] duration: Option<f32>,
     #[description = "How fast to move for (top speed 127, default 50)"] speed: Option<u8>,
 ) -> Result<(), Error> {
@@ -102,7 +102,7 @@ pub async fn move_robot(
     }
 
     let command = crate::robot_command::RobotCommand::MoveInDirection {
-        direction: crate::robot_command::Direction::Forward,
+        direction: direction.unwrap_or(crate::robot_command::Direction::Forward),
         duration,
         speed,
     };
@@ -120,3 +120,21 @@ pub async fn move_robot(
 
     Ok(())
 }
+
+/// Stop the robot
+#[poise::command(prefix_command, slash_command)]
+pub async fn stop_robot(ctx: Context<'_>) -> Result<(), Error> {
+    let command = crate::robot_command::RobotCommand::Stop;
+
+    // Send the command to the serial sender
+    ctx.data()
+        .sender
+        .send(command)
+        .expect("Failed to send command to serial sender");
+
+    // Respond to the user
+    ctx.say("Stopping the robot".to_string()).await?;
+
+    Ok(())
+}
+
