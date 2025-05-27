@@ -53,7 +53,7 @@ async fn main() {
             commands::help(),
             commands::vote(),
             commands::getvotes(),
-            commands::move_forward(),
+            commands::move_robot(),
         ],
         prefix_options: poise::PrefixFrameworkOptions {
             prefix: Some("~".into()),
@@ -107,9 +107,14 @@ async fn main() {
     // Create a channel to send commands to the robot
     let (tx, rx) = std::sync::mpsc::channel::<RobotCommand>();
 
-    // TODO: On Linux, use /dev/by-id to have deterministic port names.
-    let mut serial_sender = SerialSender::try_create("COM5".to_owned(), 115200, rx)
-        .expect("Failed to create SerialSender");
+    let path = if cfg!(target_os = "linux") {
+        "/dev/serial/by-id/usb-Pololu_Corporation_Pololu_A-Star_32U4-if00"
+    } else {
+        "COM5"
+    };
+
+    let mut serial_sender =
+        SerialSender::try_create(path.to_owned(), 115200, rx).expect("Failed to create SerialSender");
 
     let t1 = std::thread::spawn(move || serial_sender.run_forever());
 

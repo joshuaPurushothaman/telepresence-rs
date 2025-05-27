@@ -1,4 +1,4 @@
-use crate::robot_command::{RobotCommand, Direction};
+use crate::robot_command::{Direction, RobotCommand};
 
 pub struct SerialSender {
     command_recv: std::sync::mpsc::Receiver<RobotCommand>,
@@ -43,6 +43,7 @@ impl SerialSender {
                 RobotCommand::MoveInDirection {
                     direction,
                     duration,
+                    speed,
                 } => {
                     let x: u8 = 127; // Not used for Romi since it can't strafe horizontally
                     let mut y: u8 = 127;
@@ -52,20 +53,18 @@ impl SerialSender {
                     let stop_buf = [127, 127, 127, b'\n'];
                     self.port.write_all(&stop_buf)?;
 
-                    const SPEED: u8 = 50;
-
                     match direction {
                         Direction::Forward => {
-                            y = 127 + SPEED;
+                            y = (127 + speed).clamp(127, 255);
                         }
                         Direction::Backward => {
-                            y = 127 - SPEED;
+                            y = (127 - speed).clamp(0, 127);
                         }
                         Direction::LeftTurn => {
-                            rotation = 127 - SPEED;
+                            rotation = (127 - speed).clamp(0, 127);
                         }
                         Direction::RightTurn => {
-                            rotation = 127 + SPEED;
+                            rotation = (127 + speed).clamp(127, 255);
                         }
                     }
 

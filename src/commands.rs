@@ -76,31 +76,35 @@ pub async fn getvotes(
     Ok(())
 }
 
-/// Vote for something
+/// Move the robot forward
 ///
-/// Enter `~vote pumpkin` to vote for pumpkins
+/// Enter `~move_forward` to move the robot forward for 1 second
 #[poise::command(prefix_command, slash_command)]
-pub async fn move_forward(
+pub async fn move_robot(
     ctx: Context<'_>,
-    #[description = "How long to move forward for (milliseconds, default 1000)"] duration: Option<u64>,
-    // #[description = "How fast to move forward for (top speed 127, default 50)"] speed: Option<u8>, TODO: take in speed param
+    // #[description = "What direction to move in (default forward)"]
+    // #[autocomplete = "crate::robot_command::Direction::autocomplete"]
+    // direction: Option<crate::robot_command::Direction>,
+    #[description = "How long to move for (default 1 seconds)"] duration: Option<f32>,
+    #[description = "How fast to move for (top speed 127, default 50)"] speed: Option<u8>,
 ) -> Result<(), Error> {
-    // // Lock the Mutex in a block {} so the Mutex isn't locked across an await point
-    // let num_votes = {
-    //     let mut hash_map = ctx.data().votes.lock().unwrap();
-    //     let num_votes = hash_map.entry(choice.clone()).or_default();
-    //     *num_votes += 1;
-    //     *num_votes
-    // };
+    let duration = duration.unwrap_or(1.0);
+    if duration < 0.0 {
+        ctx.say("Duration must be positive").await?;
+        return Ok(());
+    }
+    let duration = std::time::Duration::from_secs_f32(duration);
 
-    // let response = format!("Successfully voted for {choice}. {choice} now has {num_votes} votes!");
-    // ctx.say(response).await?;
-
-    let duration = duration.unwrap_or(1000);
+    let speed = speed.unwrap_or(50);
+    if !(0..=127).contains(&speed) {
+        ctx.say("Speed must be between 0 and 127").await?;
+        return Ok(());
+    }
 
     let command = crate::robot_command::RobotCommand::MoveInDirection {
         direction: crate::robot_command::Direction::Forward,
-        duration: std::time::Duration::from_millis(duration),
+        duration,
+        speed,
     };
 
     // Send the command to the serial sender
@@ -109,7 +113,10 @@ pub async fn move_forward(
         .send(command)
         .expect("Failed to send command to serial sender");
 
-    ctx.say(format!("Moving forward for {duration} milliseconds")).await?;
+    // Respond to the user
+    let duration = duration.as_millis();
+    ctx.say(format!("Moving forward for {duration} milliseconds"))
+        .await?;
 
     Ok(())
 }
