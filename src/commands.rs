@@ -101,8 +101,10 @@ pub async fn move_robot(
         return Ok(());
     }
 
+    let direction = direction.unwrap_or(crate::robot_command::Direction::Forward);
+
     let command = crate::robot_command::RobotCommand::MoveInDirection {
-        direction: direction.unwrap_or(crate::robot_command::Direction::Forward),
+        direction,
         duration,
         speed,
     };
@@ -114,8 +116,8 @@ pub async fn move_robot(
         .expect("Failed to send command to serial sender");
 
     // Respond to the user
-    let duration = duration.as_millis();
-    ctx.say(format!("Moving forward for {duration} milliseconds"))
+    let duration = duration.as_millis(); // FIXME: Print correct direction
+    ctx.say(format!("Moving {direction:?} for {duration} milliseconds"))
         .await?;
 
     Ok(())
@@ -137,4 +139,3 @@ pub async fn stop_robot(ctx: Context<'_>) -> Result<(), Error> {
 
     Ok(())
 }
-
